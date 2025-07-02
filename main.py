@@ -54,13 +54,27 @@ class BattleApp:
         self.player2_menu = tk.OptionMenu(self.opponent_frame, self.player2_var, *player2_nama, command=self.set_player2)
 
         # Widget untuk Boss (awalnya dibuat, visibilitas diatur oleh update_ui_for_mode)
-        self.boss_label_widget = tk.Label(self.opponent_frame, text="Melawan Boss:", foreground="purple", bg="#ADD8E6", font=("Helvetica", 10, "bold"))
-        self.boss_name_display_label = tk.Label(self.opponent_frame, text="", font=("Helvetica", 10), bg="#ADD8E6") # Untuk menampilkan nama Boss
+        self.boss_label_widget = tk.Label(self.opponent_frame, text="Pilih Boss:", foreground="purple", bg="#ADD8E6", font=("Helvetica", 10, "bold")) # Diubah dari "Melawan Boss:"
+        # self.boss_name_display_label = tk.Label(self.opponent_frame, text="", font=("Helvetica", 10), bg="#ADD8E6") # Dihapus, diganti OptionMenu
+
+        # Variabel dan OptionMenu untuk pilihan Boss
+        self.boss_var = tk.StringVar()
+        boss_nama_list = [b.nama for b in boss_list]
+        if boss_nama_list:
+            self.boss_var.set(boss_nama_list[0])
+        self.boss_menu = tk.OptionMenu(self.opponent_frame, self.boss_var, *boss_nama_list, command=self.set_boss)
+
 
         # --- Inisialisasi Objek dan HP ---
         self.player1_obj = player1_list[0] if player1_list else None
         self.player2_obj = player2_list[0] if player2_list else None
-        self.boss_obj = boss_list[0] if boss_list else None # Default Boss pertama
+        # self.boss_obj = boss_list[0] if boss_list else None # Inisialisasi boss_obj akan dihandle di set_boss atau update_ui_for_mode
+        if boss_list:
+            initial_boss_name = self.boss_var.get()
+            self.boss_obj = next((b for b in boss_list if b.nama == initial_boss_name), boss_list[0])
+        else:
+            self.boss_obj = None
+
 
         self.player1_hp = self.player1_obj.hp if self.player1_obj else 0
 
@@ -98,7 +112,9 @@ class BattleApp:
         self.player2_label_widget.pack_forget()
         self.player2_menu.pack_forget()
         self.boss_label_widget.pack_forget()
-        self.boss_name_display_label.pack_forget()
+        # self.boss_name_display_label.pack_forget() # Sudah dihapus
+        self.boss_menu.pack_forget()
+
 
         if mode == "PvP":
             self.player2_label_widget.pack()
@@ -129,20 +145,35 @@ class BattleApp:
                  self.opponent_bar.config(maximum=1)
 
         elif mode == "PvB":
-            self.boss_label_widget.pack()
+            self.boss_label_widget.pack() # Tampilkan label "Pilih Boss:"
+            self.boss_menu.pack() # Tampilkan OptionMenu untuk Boss
+
             if boss_list:
-                self.boss_obj = boss_list[0] # Untuk saat ini, Boss pertama otomatis
-                self.opponent_obj = self.boss_obj
-                self.opponent_name = self.boss_obj.nama
-                self.opponent_hp = self.boss_obj.hp
-                self.boss_name_display_label.config(text=self.boss_obj.nama)
-                self.opponent_bar.config(maximum=self.boss_obj.hp)
-            else:
-                self.opponent_name = "Tidak Ada Boss"
+                # Set boss_obj berdasarkan pilihan di boss_var
+                current_boss_name = self.boss_var.get()
+                selected_boss = next((b for b in boss_list if b.nama == current_boss_name), None)
+                if selected_boss:
+                    self.boss_obj = selected_boss
+                elif boss_list: # Fallback jika nama tidak valid (seharusnya tidak terjadi dengan OptionMenu)
+                    self.boss_obj = boss_list[0]
+                    self.boss_var.set(self.boss_obj.nama)
+
+                if self.boss_obj:
+                    self.opponent_obj = self.boss_obj
+                    self.opponent_name = self.boss_obj.nama
+                    self.opponent_hp = self.boss_obj.hp
+                    self.opponent_bar.config(maximum=self.boss_obj.hp)
+                else: # Seharusnya tidak terjadi jika boss_list tidak kosong
+                    self.opponent_name = "Pilih Boss"
+                    self.opponent_hp = 0
+                    self.opponent_bar.config(maximum=1)
+
+            else: # boss_list kosong
+                self.opponent_name = "Tidak Ada Boss Tersedia"
                 self.opponent_hp = 0
                 self.opponent_obj = None
                 self.opponent_bar.config(maximum=1)
-            self.boss_name_display_label.pack()
+                self.boss_menu.pack_forget() # Sembunyikan menu jika tidak ada boss
 
         self.ganti_label()
 
@@ -196,11 +227,11 @@ class BattleApp:
                 if mode == "PvP":
                     opponent_attack_power = self.opponent_obj.pow
                 elif mode == "PvB":
-                    # Pastikan opponent_obj adalah instance Boss dan memiliki metode get_current_power
-                    if isinstance(self.opponent_obj, Boss):
-                        opponent_attack_power = self.opponent_obj.get_current_power(self.opponent_hp)
-                    else: # Fallback jika opponent_obj bukan Boss di mode PvB (seharusnya tidak terjadi)
+                    # Boss menyerang dengan pow konstan
+                    if self.opponent_obj: # Pastikan opponent_obj (Boss) ada
                         opponent_attack_power = self.opponent_obj.pow
+                    else:
+                        opponent_attack_power = 0 # Tidak ada Boss, tidak ada damage
 
                 self.player1_hp -= opponent_attack_power
                 if self.player1_hp < 0:
@@ -263,15 +294,26 @@ class BattleApp:
         self.ganti_label()
 
     def set_player2(self,value):
-        # Hanya relevan jika mode PvP dan player2_list ada
         if self.game_mode.get() == "PvP" and player2_list:
             selected_p2 = next((t for t in player2_list if t.nama == value), None)
             if selected_p2:
                 self.player2_obj = selected_p2
-                self.opponent_obj = self.player2_obj # Update opponent_obj juga
+                self.opponent_obj = self.player2_obj
                 self.opponent_name = self.player2_obj.nama
-                self.opponent_hp = self.player2_obj.hp # Reset HP saat ganti karakter
+                self.opponent_hp = self.player2_obj.hp
                 self.opponent_bar.config(maximum=self.player2_obj.hp)
+        self.ganti_label()
+
+    def set_boss(self, value):
+        # Dipanggil ketika pilihan Boss berubah di OptionMenu
+        if self.game_mode.get() == "PvB" and boss_list:
+            selected_boss = next((b for b in boss_list if b.nama == value), None)
+            if selected_boss:
+                self.boss_obj = selected_boss
+                self.opponent_obj = self.boss_obj
+                self.opponent_name = self.boss_obj.nama
+                self.opponent_hp = self.boss_obj.hp # Reset HP Boss saat dipilih
+                self.opponent_bar.config(maximum=self.boss_obj.hp)
         self.ganti_label()
 
     def ganti_label(self):
