@@ -5,9 +5,9 @@ class player2:
         self.pow = pow
 
 player2_list = [
-    player2("Tower", 1000, 150),
-    player2("Turtle", 500, 500),
-    player2("Canon", 750, 250),
-    player2("Lancer", 750, 350),
-    player2("Infantry", 500, 550)
+    player2("Tower", 10000, 150),
+    player2("Turtle", 5000, 500),
+    player2("Canon", 7500, 250),
+    player2("Lancer", 7500, 350),
+    player2("Infantry", 5000, 550)
 ]
