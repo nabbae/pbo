@@ -1,5 +1,6 @@
-from karakter1 import player1,player1_list
-from karakter2 import player2,player2_list
+from karakter1 import player1, player1_list
+from karakter2 import player2, player2_list
+from boss import Boss, boss_list # Impor Boss dan boss_list
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
@@ -8,144 +9,296 @@ class BattleApp:
     def __init__(self,master):
         self.master = master
         master.title("Battle one Dimention")
-        master.geometry("400x400")
+        # Perbesar window untuk mengakomodasi elemen UI baru
+        master.geometry("450x550")
 
-        # Mengubah warna latar belakang jendela utama menjadi biru muda (#ADD8E6)
         master.config(bg="#ADD8E6")
 
-        # Judul Utama (teks berjalan)
         self.main_title_text = "Selamat Datang Di Game Battle Satu Dimensi Saya"
-        # Mengurangi ukuran font judul utama menjadi 14
         self.main_title_label = tk.Label(master, text=self.main_title_text, font=("Helvetica", 12, "bold"), fg="black", bg="#ADD8E6")
-        # Mengatur agar label rata kiri (west)
         self.main_title_label.pack(pady=10, anchor="w")
         self.scroll_pos = 0
         self.scroll_text()
 
-        # Subjudul
         self.subtitle_label = tk.Label(master, text="~ by nabilah shafirah ~", font=("Helvetica", 10, "italic"), fg="black", bg="#ADD8E6")
-        # Menambahkan sedikit padding di bawah subjudul dan mengatur rata tengah
         self.subtitle_label.pack(pady=(0, 10), anchor="s")
 
-        ##Judul Widget OptionMenu player 1
-        tk.Label(master, text="Choose Player 1 :", foreground="red", bg="#ADD8E6").pack()
-        #Pull Data Dari Karakter 1
+        # --- Pilihan Mode Permainan ---
+        self.game_mode = tk.StringVar(value="PvP") # Default PvP
+
+        mode_frame = tk.Frame(master, bg="#ADD8E6")
+        mode_frame.pack(pady=5)
+        tk.Label(mode_frame, text="Pilih Mode:", font=("Helvetica", 10, "bold"), bg="#ADD8E6").pack(side=tk.LEFT, padx=5)
+        tk.Radiobutton(mode_frame, text="Player vs Player", variable=self.game_mode, value="PvP", command=self.update_ui_for_mode, bg="#ADD8E6", font=("Helvetica", 9)).pack(side=tk.LEFT)
+        tk.Radiobutton(mode_frame, text="Player vs Boss", variable=self.game_mode, value="PvB", command=self.update_ui_for_mode, bg="#ADD8E6", font=("Helvetica", 9)).pack(side=tk.LEFT)
+
+        # --- Pemilihan Player 1 ---
+        tk.Label(master, text="Choose Player 1 :", foreground="red", bg="#ADD8E6", font=("Helvetica", 10, "bold")).pack()
         self.player1_var = tk.StringVar()
         player1_nama = [s.nama for s in player1_list]
-        self.player1_var.set(player1_nama[0])
-        #Widget OptionMenu
+        if player1_nama:
+            self.player1_var.set(player1_nama[0])
         self.player1_menu = tk.OptionMenu(master, self.player1_var, *player1_nama, command=self.set_player1)
         self.player1_menu.pack()
 
-        ##Judul Widget OptionMenu player 2
-        tk.Label(master, text="Choose Player 2 :", foreground="red", bg="#ADD8E6").pack()
-        #Pull Data Dari Karakter 2
+        # --- Frame untuk Lawan (Player 2 atau Boss) ---
+        self.opponent_frame = tk.Frame(master, bg="#ADD8E6")
+        self.opponent_frame.pack(pady=5)
+
+        # Widget untuk Player 2 (awalnya dibuat, visibilitas diatur oleh update_ui_for_mode)
+        self.player2_label_widget = tk.Label(self.opponent_frame, text="Choose Player 2 :", foreground="blue", bg="#ADD8E6", font=("Helvetica", 10, "bold"))
         self.player2_var = tk.StringVar()
         player2_nama = [t.nama for t in player2_list]
-        self.player2_var.set(player2_nama[0])
-        #Widget OptionMenu
-        self.player2_menu = tk.OptionMenu(master, self.player2_var, *player2_nama, command=self.set_player2)
-        self.player2_menu.pack()
+        if player2_nama:
+            self.player2_var.set(player2_nama[0])
+        self.player2_menu = tk.OptionMenu(self.opponent_frame, self.player2_var, *player2_nama, command=self.set_player2)
 
-        #pull data progres bar
-        self.player1_obj = player1_list[0]
-        self.player2_obj = player2_list[0]
-        self.player1_hp = self.player1_obj.hp
-        self.player2_hp = self.player2_obj.hp
+        # Widget untuk Boss (awalnya dibuat, visibilitas diatur oleh update_ui_for_mode)
+        self.boss_label_widget = tk.Label(self.opponent_frame, text="Melawan Boss:", foreground="purple", bg="#ADD8E6", font=("Helvetica", 10, "bold"))
+        self.boss_name_display_label = tk.Label(self.opponent_frame, text="", font=("Helvetica", 10), bg="#ADD8E6") # Untuk menampilkan nama Boss
 
-        #label progress barrrr player 1
-        self.label_player1 = tk.Label(master,text=f"{self.player1_obj.nama} HP:{self.player1_hp}")
+        # --- Inisialisasi Objek dan HP ---
+        self.player1_obj = player1_list[0] if player1_list else None
+        self.player2_obj = player2_list[0] if player2_list else None
+        self.boss_obj = boss_list[0] if boss_list else None # Default Boss pertama
+
+        self.player1_hp = self.player1_obj.hp if self.player1_obj else 0
+
+        # HP dan nama lawan akan di-set lebih lanjut di update_ui_for_mode
+        self.opponent_obj = None
+        self.opponent_hp = 0
+        self.opponent_name = "" # Nama lawan untuk display
+
+        # --- Progress Bar Player 1 ---
+        self.label_player1 = tk.Label(master,text="", bg="#ADD8E6", font=("Helvetica", 9)) # Teks diatur di ganti_label
         self.label_player1.pack()
-        #widget progress bar player 1
-        self.player1_bar = ttk.Progressbar(master,maximum=self.player1_obj.hp, length="200")
+        self.player1_bar = ttk.Progressbar(master, length="250") # Max diatur di set_player1/ganti_label
         self.player1_bar.pack()
-        self.player1_bar["value"] = self.player1_hp
 
-        #label progress barrrr player 2
-        self.label_player2 = tk.Label(master,text=f"{self.player2_obj.nama} HP:{self.player2_hp}")
-        self.label_player2.pack()
-        #widget progress bar player 2
-        self.player2_bar = ttk.Progressbar(master,maximum=self.player2_obj.hp, length="200")
-        self.player2_bar.pack()
-        self.player2_bar["value"] = self.player2_hp
+        # --- Progress Bar Lawan (Player 2 atau Boss) ---
+        self.label_opponent = tk.Label(master,text="", bg="#ADD8E6", font=("Helvetica", 9)) # Teks diatur di ganti_label
+        self.label_opponent.pack()
+        self.opponent_bar = ttk.Progressbar(master, length="250") # Max diatur di update_ui_for_mode/ganti_label
+        self.opponent_bar.pack()
 
-        #widget tombol button mulai battle
-        self.tombol_battle = tk.Button(master, text="Start Battle", command=self.mulai_battle)
-        self.tombol_battle.pack(pady=10)
-    
+        self.tombol_battle = tk.Button(master, text="Start Battle", command=self.mulai_battle, font=("Helvetica", 10, "bold"))
+        self.tombol_battle.pack(pady=15)
+
+        # Panggil update_ui_for_mode untuk setup UI awal berdasarkan mode default dan inisialisasi objek
+        self.update_ui_for_mode()
+        # Panggil set_player1 juga untuk memastikan player1_obj dan barnya terinisialisasi dengan benar
+        if self.player1_obj:
+            self.set_player1(self.player1_var.get())
+
+
+    def update_ui_for_mode(self):
+        mode = self.game_mode.get()
+
+        # Sembunyikan semua widget lawan spesifik mode dulu
+        self.player2_label_widget.pack_forget()
+        self.player2_menu.pack_forget()
+        self.boss_label_widget.pack_forget()
+        self.boss_name_display_label.pack_forget()
+
+        if mode == "PvP":
+            self.player2_label_widget.pack()
+            if player2_list :
+                 self.player2_menu.pack()
+                 # Jika self.player2_obj belum ada atau tidak sesuai dengan var (misal setelah switch mode)
+                 current_p2_name = self.player2_var.get()
+                 selected_p2 = next((p for p in player2_list if p.nama == current_p2_name), None)
+                 if selected_p2:
+                     self.player2_obj = selected_p2
+                 elif player2_list: # Fallback ke player pertama jika nama tidak valid
+                     self.player2_obj = player2_list[0]
+                     self.player2_var.set(self.player2_obj.nama)
+
+                 if self.player2_obj:
+                     self.opponent_obj = self.player2_obj
+                     self.opponent_name = self.player2_obj.nama
+                     self.opponent_hp = self.player2_obj.hp
+                     self.opponent_bar.config(maximum=self.player2_obj.hp)
+                 else: # Seharusnya tidak terjadi jika player2_list tidak kosong
+                    self.opponent_name = "Pilih Player 2"
+                    self.opponent_hp = 0
+                    self.opponent_bar.config(maximum=1)
+            else:
+                 self.opponent_name = "Tidak Ada Player 2"
+                 self.opponent_hp = 0
+                 self.opponent_obj = None
+                 self.opponent_bar.config(maximum=1)
+
+        elif mode == "PvB":
+            self.boss_label_widget.pack()
+            if boss_list:
+                self.boss_obj = boss_list[0] # Untuk saat ini, Boss pertama otomatis
+                self.opponent_obj = self.boss_obj
+                self.opponent_name = self.boss_obj.nama
+                self.opponent_hp = self.boss_obj.hp
+                self.boss_name_display_label.config(text=self.boss_obj.nama)
+                self.opponent_bar.config(maximum=self.boss_obj.hp)
+            else:
+                self.opponent_name = "Tidak Ada Boss"
+                self.opponent_hp = 0
+                self.opponent_obj = None
+                self.opponent_bar.config(maximum=1)
+            self.boss_name_display_label.pack()
+
+        self.ganti_label()
+
     def mulai_battle(self):
+        if not self.player1_obj:
+            messagebox.showerror("Error", "Player 1 tidak dipilih atau tidak tersedia.")
+            return
+        if not self.opponent_obj:
+            messagebox.showerror("Error", "Lawan (Player 2 atau Boss) tidak tersedia.")
+            return
+
         self.tombol_battle.config(state="disabled")
         self.round = 1
+
+        # Reset HP player 1 ke max HP dari objeknya
         self.player1_hp = self.player1_obj.hp
-        self.player2_hp = self.player2_obj.hp
-        self.ganti_label()
-        self.master.after(1000, self.auto_battle)
+
+        # Reset HP lawan ke max HP dari objeknya
+        self.opponent_hp = self.opponent_obj.hp
+
+        self.ganti_label() # Update label sebelum battle dimulai
+        self.master.after(1000, self.auto_battle) # auto_battle akan diubah di step selanjutnya
 
     def auto_battle(self):
-        if self.player1_hp > 0 and self.player2_hp > 0:
-            #Player 1 mengerang player 2
-            self.player2_hp -= self.player1_obj.pow
-            if self.player2_hp < 0:
-                self.player2_hp = 0
-            self.ganti_label()
-            if self.player2_hp <= 0:
-                messagebox.showinfo("Hasil Battle", f"{self.player2_obj.nama} Dikalahkan Oleh {self.player1_obj.nama}")
+        if not self.player1_obj or not self.opponent_obj:
+            messagebox.showerror("Error", "Objek pemain atau lawan tidak terinisialisasi dengan benar.")
+            self.tombol_battle.config(state="active")
+            return
+
+        mode = self.game_mode.get()
+        player1_wins = False
+        opponent_wins = False
+
+        if self.player1_hp > 0 and self.opponent_hp > 0:
+            # --- Giliran Player 1 Menyerang ---
+            damage_by_player1 = self.player1_obj.pow
+            self.opponent_hp -= damage_by_player1
+            if self.opponent_hp < 0:
+                self.opponent_hp = 0
+
+            print(f"Round {self.round}: {self.player1_obj.nama} menyerang {self.opponent_name}. Damage: {damage_by_player1}. {self.opponent_name} HP: {self.opponent_hp}")
+
+            self.ganti_label() # Update UI segera setelah serangan Player 1
+
+            if self.opponent_hp <= 0:
+                player1_wins = True
+
+            # --- Giliran Lawan Menyerang (jika belum kalah) ---
+            if not player1_wins:
+                opponent_attack_power = 0
+                if mode == "PvP":
+                    opponent_attack_power = self.opponent_obj.pow
+                elif mode == "PvB":
+                    # Pastikan opponent_obj adalah instance Boss dan memiliki metode get_current_power
+                    if isinstance(self.opponent_obj, Boss):
+                        opponent_attack_power = self.opponent_obj.get_current_power(self.opponent_hp)
+                    else: # Fallback jika opponent_obj bukan Boss di mode PvB (seharusnya tidak terjadi)
+                        opponent_attack_power = self.opponent_obj.pow
+
+                self.player1_hp -= opponent_attack_power
+                if self.player1_hp < 0:
+                    self.player1_hp = 0
+
+                print(f"Round {self.round}: {self.opponent_name} menyerang {self.player1_obj.nama}. Damage: {opponent_attack_power}. {self.player1_obj.nama} HP: {self.player1_hp}")
+
+                self.ganti_label() # Update UI segera setelah serangan Lawan
+
+                if self.player1_hp <= 0:
+                    opponent_wins = True
+
+            # --- Cek Kondisi Akhir dan Lanjutkan atau Stop ---
+            if player1_wins:
+                winner_name = self.player1_obj.nama
+                loser_name = self.opponent_name
+                if mode == "PvB": loser_name += " (Boss)"
+                messagebox.showinfo("Hasil Battle", f"{loser_name} Dikalahkan Oleh {winner_name}!\n{winner_name} Menang!")
                 self.tombol_battle.config(state="active")
                 return
-            
-            #Player 2 mengerang player 1
-            self.player1_hp -= self.player2_obj.pow
-            if self.player1_hp < 0:
-                self.player1_hp = 0
-            self.ganti_label()
-            if self.player1_hp <= 0:
-                messagebox.showinfo("Hasil Battle", f"{self.player1_obj.nama} Dikalahkan Oleh {self.player2_obj.nama}")
+
+            if opponent_wins:
+                winner_name = self.opponent_name
+                if mode == "PvB": winner_name += " (Boss)"
+                loser_name = self.player1_obj.nama
+                messagebox.showinfo("Hasil Battle", f"{loser_name} Dikalahkan Oleh {winner_name}!\n{winner_name} Menang!")
                 self.tombol_battle.config(state="active")
                 return
 
             self.round += 1
             self.master.after(1000, self.auto_battle)
+        else:
+            # Jika salah satu HP sudah 0 di awal pemanggilan fungsi (seharusnya sudah ditangani di atas)
+            self.tombol_battle.config(state="active")
+            # Tambahan: Tampilkan pesan jika game berakhir karena salah satu HP sudah 0 sebelum giliran
+            if self.player1_hp <= 0 and not opponent_wins: # jika P1 kalah sebelum giliran lawan sempat tercatat
+                 winner_name = self.opponent_name
+                 if mode == "PvB": winner_name += " (Boss)"
+                 messagebox.showinfo("Hasil Battle", f"{self.player1_obj.nama} Dikalahkan Oleh {winner_name}!\n{winner_name} Menang!")
+            elif self.opponent_hp <= 0 and not player1_wins: # jika lawan kalah sebelum giliran P1 sempat tercatat
+                 winner_name = self.player1_obj.nama
+                 loser_name = self.opponent_name
+                 if mode == "PvB": loser_name += " (Boss)"
+                 messagebox.showinfo("Hasil Battle", f"{loser_name} Dikalahkan Oleh {winner_name}!\n{winner_name} Menang!")
+
 
     def scroll_text(self):
-        # Membuat teks "berbantalan" untuk memastikan perulangan yang mulus dan gulir yang tampaknya berkelanjutan
-        padded_text = self.main_title_text + "        " # Menambahkan beberapa spasi untuk pemisahan
-
+        padded_text = self.main_title_text + "        "
         self.scroll_pos = (self.scroll_pos + 1) % len(padded_text)
-        
-        # Menggeser teks untuk menciptakan efek gulir
         displayed_text = padded_text[self.scroll_pos:] + padded_text[:self.scroll_pos]
         self.main_title_label.config(text=displayed_text)
-        self.master.after(150, self.scroll_text) # Sesuaikan 150 untuk kecepatan gulir (lebih rendah lebih cepat)
+        self.master.after(150, self.scroll_text)
 
     def set_player1(self,value):
-        for s in player1_list:
-            if s.nama == value:
-                self.player1_obj = s
-                break
-        self.player1_hp = self.player1_obj.hp
-        self.player1_bar.config(maximum=self.player1_obj.hp)
+        selected_p1 = next((s for s in player1_list if s.nama == value), None)
+        if selected_p1:
+            self.player1_obj = selected_p1
+            self.player1_hp = self.player1_obj.hp # Reset HP saat ganti karakter
+            self.player1_bar.config(maximum=self.player1_obj.hp)
         self.ganti_label()
 
     def set_player2(self,value):
-        for t in player2_list:
-            if t.nama == value:
-                self.player2_obj = t
-                break
-        self.player2_hp = self.player2_obj.hp
-        self.player2_bar.config(maximum=self.player2_obj.hp)
+        # Hanya relevan jika mode PvP dan player2_list ada
+        if self.game_mode.get() == "PvP" and player2_list:
+            selected_p2 = next((t for t in player2_list if t.nama == value), None)
+            if selected_p2:
+                self.player2_obj = selected_p2
+                self.opponent_obj = self.player2_obj # Update opponent_obj juga
+                self.opponent_name = self.player2_obj.nama
+                self.opponent_hp = self.player2_obj.hp # Reset HP saat ganti karakter
+                self.opponent_bar.config(maximum=self.player2_obj.hp)
         self.ganti_label()
 
     def ganti_label(self):
-        self.label_player1.config(
-        text=f"{self.player1_obj.nama} HP:{self.player1_hp}")
+        # Update Label Player 1
+        if self.player1_obj:
+            self.label_player1.config(text=f"{self.player1_obj.nama} HP: {self.player1_hp}/{self.player1_obj.hp}")
+            self.player1_bar["value"] = self.player1_hp
+            if self.player1_bar['maximum'] != self.player1_obj.hp: # Pastikan max bar sesuai
+                 self.player1_bar.config(maximum=self.player1_obj.hp)
+        else:
+            self.label_player1.config(text="Player 1 HP: -/-")
+            self.player1_bar["value"] = 0
 
-        self.label_player2.config(
-        text=f"{self.player2_obj.nama} HP:{self.player2_hp}")
+        # Update Label Lawan
+        if self.opponent_obj:
+            max_hp_opponent = self.opponent_obj.hp
+            display_name = self.opponent_name
+            if self.game_mode.get() == "PvB":
+                display_name += " (Boss)"
 
-        self.player1_bar["value"] = self.player1_hp
-        self.player2_bar["value"] = self.player2_hp
-    
-
+            self.label_opponent.config(text=f"{display_name} HP: {self.opponent_hp}/{max_hp_opponent}")
+            self.opponent_bar["value"] = self.opponent_hp
+            if self.opponent_bar['maximum'] != max_hp_opponent: # Pastikan max bar sesuai
+                 self.opponent_bar.config(maximum=max_hp_opponent)
+        else:
+            self.label_opponent.config(text="Lawan HP: -/-")
+            self.opponent_bar["value"] = 0
 
 root = tk.Tk()
 app = BattleApp(root)
