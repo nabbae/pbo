@@ -28,19 +28,24 @@ Nabilla De Estika"""
         self.subtitle_label = tk.Label(master, text=subtitle_text, justify=tk.CENTER, font=("Helvetica", 10, "italic"), fg="black", bg="#ADD8E6")
         self.subtitle_label.pack(pady=(0, 10), anchor="s")
 
+        # Frame utama untuk semua konten kecuali tombol Start Battle
+        main_content_frame = tk.Frame(master, bg="#ADD8E6")
+        main_content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+
         self.game_mode = tk.StringVar(value="PvP")
         self.player_team_objects = []
-        self.player_team_hps = [] # Untuk menyimpan HP aktual setiap anggota tim
-        self.current_team_attacker_index = 0 # Indeks pemain tim yang gilirannya menyerang/diserang
+        self.player_team_hps = []
+        self.current_team_attacker_index = 0
 
-        mode_frame = tk.Frame(master, bg="#ADD8E6")
+        mode_frame = tk.Frame(main_content_frame, bg="#ADD8E6") # Dipack ke main_content_frame
         mode_frame.pack(pady=5)
         tk.Label(mode_frame, text="Pilih Mode:", font=("Helvetica", 10, "bold"), bg="#ADD8E6").pack(side=tk.LEFT, padx=5)
         tk.Radiobutton(mode_frame, text="Player vs Player", variable=self.game_mode, value="PvP", command=self.update_ui_for_mode, bg="#ADD8E6", font=("Helvetica", 9)).pack(side=tk.LEFT)
         tk.Radiobutton(mode_frame, text="Player vs Boss", variable=self.game_mode, value="PvB", command=self.update_ui_for_mode, bg="#ADD8E6", font=("Helvetica", 9)).pack(side=tk.LEFT)
 
         # --- Pemilihan Player Utama ("Choose Your Character(s)") ---
-        self.player1_selection_frame = tk.Frame(master, bg="#ADD8E6")
+        self.player1_selection_frame = tk.Frame(main_content_frame, bg="#ADD8E6") # Dipack ke main_content_frame
         self.player1_label_widget = tk.Label(self.player1_selection_frame, text="Choose Your Character(s):", foreground="red", bg="#ADD8E6", font=("Helvetica", 10, "bold"))
         self.player1_label_widget.pack()
         self.player1_var = tk.StringVar()
@@ -72,7 +77,7 @@ Nabilla De Estika"""
             item_frame.pack(side=tk.LEFT, padx=10, pady=2)
 
         # --- Frame untuk Lawan (Player 2 atau Boss) ---
-        self.opponent_frame = tk.Frame(master, bg="#ADD8E6")
+        self.opponent_frame = tk.Frame(main_content_frame, bg="#ADD8E6") # Dipack ke main_content_frame
         self.opponent_frame.pack(pady=5)
         self.player2_label_widget = tk.Label(self.opponent_frame, text="Choose Your Enemy:", foreground="blue", bg="#ADD8E6", font=("Helvetica", 10, "bold"))
         self.player2_var = tk.StringVar()
@@ -93,13 +98,13 @@ Nabilla De Estika"""
         self.player1_hp = 0
         self.opponent_hp = 0
 
-        self.player1_hp_display_frame_pvp = tk.Frame(master, bg="#ADD8E6")
+        self.player1_hp_display_frame_pvp = tk.Frame(main_content_frame, bg="#ADD8E6") # Dipack ke main_content_frame
         self.label_player1_pvp = tk.Label(self.player1_hp_display_frame_pvp,text="", bg="#ADD8E6", font=("Helvetica", 9))
         self.label_player1_pvp.pack()
         self.player1_bar_pvp = ttk.Progressbar(self.player1_hp_display_frame_pvp, length="250")
         self.player1_bar_pvp.pack()
 
-        self.team_hp_display_frame = tk.Frame(master, bg="#ADD8E6")
+        self.team_hp_display_frame = tk.Frame(main_content_frame, bg="#ADD8E6") # Dipack ke main_content_frame
         self.team_member_hp_labels = []
         self.team_member_hp_bars = []
         self.team_member_hp_frames = []
@@ -114,14 +119,15 @@ Nabilla De Estika"""
             self.team_member_hp_bars.append(bar)
             self.team_member_hp_frames.append(member_hp_frame)
 
-        self.opponent_hp_display_frame = tk.Frame(master, bg="#ADD8E6")
+        self.opponent_hp_display_frame = tk.Frame(main_content_frame, bg="#ADD8E6") # Dipack ke main_content_frame
         self.label_opponent = tk.Label(self.opponent_hp_display_frame,text="", bg="#ADD8E6", font=("Helvetica", 9))
         self.label_opponent.pack()
         self.opponent_bar = ttk.Progressbar(self.opponent_hp_display_frame, length="250")
         self.opponent_bar.pack()
 
+        # Tombol Start Battle di-pack ke master, di luar main_content_frame
         self.tombol_battle = tk.Button(master, text="Start Battle", command=self.mulai_battle, font=("Helvetica", 10, "bold"))
-        self.tombol_battle.pack(pady=15)
+        self.tombol_battle.pack(pady=10, side=tk.BOTTOM) # side=tk.BOTTOM untuk memastikannya di bawah
 
         self.update_ui_for_mode()
         self.ganti_label()
