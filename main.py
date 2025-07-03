@@ -9,7 +9,7 @@ class BattleApp:
     def __init__(self,master):
         self.master = master
         master.title("Battle one Dimention")
-        master.geometry("450x850") # Ukuran window disesuaikan
+        master.geometry("450x850")
 
         master.config(bg="#ADD8E6")
 
@@ -28,24 +28,21 @@ Nabilla De Estika"""
         self.subtitle_label = tk.Label(master, text=subtitle_text, justify=tk.CENTER, font=("Helvetica", 10, "italic"), fg="black", bg="#ADD8E6")
         self.subtitle_label.pack(pady=(0, 10), anchor="s")
 
-        # Frame utama untuk semua konten kecuali tombol Start Battle
-        main_content_frame = tk.Frame(master, bg="#ADD8E6")
-        main_content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-
+        self.main_content_frame = tk.Frame(master, bg="#ADD8E6") # Simpan referensi
+        self.main_content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         self.game_mode = tk.StringVar(value="PvP")
         self.player_team_objects = []
         self.player_team_hps = []
         self.current_team_attacker_index = 0
 
-        mode_frame = tk.Frame(main_content_frame, bg="#ADD8E6") # Dipack ke main_content_frame
+        mode_frame = tk.Frame(self.main_content_frame, bg="#ADD8E6")
         mode_frame.pack(pady=5)
         tk.Label(mode_frame, text="Pilih Mode:", font=("Helvetica", 10, "bold"), bg="#ADD8E6").pack(side=tk.LEFT, padx=5)
         tk.Radiobutton(mode_frame, text="Player vs Player", variable=self.game_mode, value="PvP", command=self.update_ui_for_mode, bg="#ADD8E6", font=("Helvetica", 9)).pack(side=tk.LEFT)
         tk.Radiobutton(mode_frame, text="Player vs Boss", variable=self.game_mode, value="PvB", command=self.update_ui_for_mode, bg="#ADD8E6", font=("Helvetica", 9)).pack(side=tk.LEFT)
 
-        # --- Pemilihan Player Utama ("Choose Your Character(s)") ---
-        self.player1_selection_frame = tk.Frame(main_content_frame, bg="#ADD8E6") # Dipack ke main_content_frame
+        self.player1_selection_frame = tk.Frame(self.main_content_frame, bg="#ADD8E6")
         self.player1_label_widget = tk.Label(self.player1_selection_frame, text="Choose Your Character(s):", foreground="red", bg="#ADD8E6", font=("Helvetica", 10, "bold"))
         self.player1_label_widget.pack()
         self.player1_var = tk.StringVar()
@@ -54,8 +51,7 @@ Nabilla De Estika"""
         self.player1_menu = tk.OptionMenu(self.player1_selection_frame, self.player1_var, *player1_nama_list_for_dropdown, command=self.set_player1)
         self.player1_menu.pack()
 
-        # --- Frame untuk Pemilihan Tim (Mode PvB, hingga 5 pemain) ---
-        self.team_selection_frame = tk.Frame(master, bg="#ADD8E6")
+        self.team_selection_frame = tk.Frame(self.main_content_frame, bg="#ADD8E6") # Di-pack ke main_content_frame
         tk.Label(self.team_selection_frame, text="Choose Your Character(s) (Team up to 5):", font=("Helvetica", 10, "bold"), bg="#ADD8E6").pack(pady=(0,5))
         self.team_member_vars = [tk.StringVar() for _ in range(5)]
         self.team_member_menus = []
@@ -76,9 +72,8 @@ Nabilla De Estika"""
             self.team_member_menus.append(menu)
             item_frame.pack(side=tk.LEFT, padx=10, pady=2)
 
-        # --- Frame untuk Lawan (Player 2 atau Boss) ---
-        self.opponent_frame = tk.Frame(main_content_frame, bg="#ADD8E6") # Dipack ke main_content_frame
-        self.opponent_frame.pack(pady=5)
+        self.opponent_frame = tk.Frame(self.main_content_frame, bg="#ADD8E6")
+        self.opponent_frame.pack(pady=5) # Ini sudah benar, opponent_frame di pack ke main_content_frame
         self.player2_label_widget = tk.Label(self.opponent_frame, text="Choose Your Enemy:", foreground="blue", bg="#ADD8E6", font=("Helvetica", 10, "bold"))
         self.player2_var = tk.StringVar()
         player2_nama = [t.nama for t in player2_list]
@@ -98,19 +93,18 @@ Nabilla De Estika"""
         self.player1_hp = 0
         self.opponent_hp = 0
 
-        self.player1_hp_display_frame_pvp = tk.Frame(main_content_frame, bg="#ADD8E6") # Dipack ke main_content_frame
+        self.player1_hp_display_frame_pvp = tk.Frame(self.main_content_frame, bg="#ADD8E6")
         self.label_player1_pvp = tk.Label(self.player1_hp_display_frame_pvp,text="", bg="#ADD8E6", font=("Helvetica", 9))
         self.label_player1_pvp.pack()
         self.player1_bar_pvp = ttk.Progressbar(self.player1_hp_display_frame_pvp, length="250")
         self.player1_bar_pvp.pack()
 
-        self.team_hp_display_frame = tk.Frame(main_content_frame, bg="#ADD8E6") # Dipack ke main_content_frame
+        self.team_hp_display_frame = tk.Frame(self.main_content_frame, bg="#ADD8E6")
         self.team_member_hp_labels = []
         self.team_member_hp_bars = []
         self.team_member_hp_frames = []
         for i in range(5):
             member_hp_frame = tk.Frame(self.team_hp_display_frame, bg="#ADD8E6")
-            # Perubahan di sini untuk tata letak horizontal per baris HP tim
             label = tk.Label(member_hp_frame, text="", bg="#ADD8E6", font=("Helvetica", 8), width=20, anchor="w")
             label.pack(side=tk.LEFT, padx=(5,2))
             bar = ttk.Progressbar(member_hp_frame, length=150)
@@ -119,15 +113,13 @@ Nabilla De Estika"""
             self.team_member_hp_bars.append(bar)
             self.team_member_hp_frames.append(member_hp_frame)
 
-        self.opponent_hp_display_frame = tk.Frame(main_content_frame, bg="#ADD8E6") # Dipack ke main_content_frame
+        self.opponent_hp_display_frame = tk.Frame(self.main_content_frame, bg="#ADD8E6")
         self.label_opponent = tk.Label(self.opponent_hp_display_frame,text="", bg="#ADD8E6", font=("Helvetica", 9))
         self.label_opponent.pack()
         self.opponent_bar = ttk.Progressbar(self.opponent_hp_display_frame, length="250")
         self.opponent_bar.pack()
 
-        # Tombol Start Battle di-pack ke master, di luar main_content_frame
         self.tombol_battle = tk.Button(master, text="Start Battle", command=self.mulai_battle, font=("Helvetica", 10, "bold"))
-        self.tombol_battle.pack(pady=10, side=tk.BOTTOM) # side=tk.BOTTOM untuk memastikannya di bawah
 
         self.update_ui_for_mode()
         self.ganti_label()
@@ -136,24 +128,33 @@ Nabilla De Estika"""
     def update_ui_for_mode(self):
         mode = self.game_mode.get()
 
+        # Lepas semua widget yang mungkin sudah di-pack sebelumnya dari parent masing-masing
         self.player1_selection_frame.pack_forget()
         self.player1_hp_display_frame_pvp.pack_forget()
         self.team_selection_frame.pack_forget()
         self.team_hp_display_frame.pack_forget()
-        for frame in self.team_member_hp_frames: # Pastikan frame individual HP tim juga disembunyikan
+        for frame in self.team_member_hp_frames:
             frame.pack_forget()
+
+        # opponent_frame berisi player2_widgets dan boss_widgets, jadi kita manage visibility widget di dalamnya
         self.player2_label_widget.pack_forget()
         self.player2_menu.pack_forget()
         self.boss_label_widget.pack_forget()
         self.boss_menu.pack_forget()
+        # opponent_frame sendiri akan di-pack ulang
+        self.opponent_frame.pack_forget()
         self.opponent_hp_display_frame.pack_forget()
+        self.tombol_battle.pack_forget()
 
         if mode == "PvP":
-            self.player1_selection_frame.pack(pady=5)
-            self.player1_hp_display_frame_pvp.pack(pady=5)
-            self.player2_label_widget.pack()
-            self.player2_menu.pack()
-            self.opponent_hp_display_frame.pack(pady=5)
+            self.player1_selection_frame.pack(in_=self.main_content_frame, pady=5)
+            self.player1_hp_display_frame_pvp.pack(in_=self.main_content_frame, pady=5)
+
+            self.player2_label_widget.pack(in_=self.opponent_frame)
+            self.player2_menu.pack(in_=self.opponent_frame)
+            self.opponent_frame.pack(in_=self.main_content_frame, pady=5) # Pack opponent_frame ke main_content_frame
+            self.opponent_hp_display_frame.pack(in_=self.main_content_frame, pady=5)
+            self.tombol_battle.pack(in_=self.main_content_frame, pady=10, anchor='s')
 
             if player1_list: self.set_player1(self.player1_var.get())
             else: self.player1_obj = None; self.player1_hp = 0
@@ -161,11 +162,14 @@ Nabilla De Estika"""
             else: self.opponent_obj = None; self.opponent_hp = 0; self.opponent_name = "No Enemy"
 
         elif mode == "PvB":
-            self.team_selection_frame.pack(pady=5)
-            self.team_hp_display_frame.pack(pady=5)
-            self.boss_label_widget.pack()
-            self.boss_menu.pack()
-            self.opponent_hp_display_frame.pack(pady=5)
+            self.team_selection_frame.pack(in_=self.main_content_frame, pady=5)
+            self.team_hp_display_frame.pack(in_=self.main_content_frame, pady=5)
+
+            self.boss_label_widget.pack(in_=self.opponent_frame)
+            self.boss_menu.pack(in_=self.opponent_frame)
+            self.opponent_frame.pack(in_=self.main_content_frame, pady=5) # Pack opponent_frame ke main_content_frame
+            self.opponent_hp_display_frame.pack(in_=self.main_content_frame, pady=5)
+            self.tombol_battle.pack(pady=10, side=tk.BOTTOM) # Ke master window di paling bawah
 
             if boss_list: self.set_boss(self.boss_var.get())
             else: self.opponent_obj = None; self.opponent_hp = 0; self.opponent_name = "No Boss"
@@ -182,13 +186,12 @@ Nabilla De Estika"""
         self.current_team_attacker_index = 0
 
         if mode == "PvP":
-            if self.player1_var.get() == "Kosong" or not player1_list: # Cek jika "Kosong" dipilih
+            if self.player1_var.get() == "Kosong" or not player1_list:
                  messagebox.showerror("Error", "Player utama belum dipilih.")
                  return
             if not self.player1_obj:
-                # Jika player1_obj masih None, coba set lagi berdasarkan var
                 self.set_player1(self.player1_var.get())
-                if not self.player1_obj: # Jika masih None setelah coba set
+                if not self.player1_obj:
                      messagebox.showerror("Error", "Objek Player utama tidak valid.")
                      return
             self.player1_hp = self.player1_obj.hp
@@ -284,23 +287,22 @@ Nabilla De Estika"""
             if not battle_over:
                 initial_attacker_index = self.current_team_attacker_index
                 moved_to_next = False
-                for _ in range(len(self.player_team_objects)): # Loop paling banyak sejumlah anggota tim
+                for _ in range(len(self.player_team_objects)):
                     self.current_team_attacker_index = (self.current_team_attacker_index + 1) % len(self.player_team_objects)
                     if self.player_team_hps[self.current_team_attacker_index] > 0:
                         moved_to_next = True
                         break
 
-                if not moved_to_next and not all(hp <= 0 for hp in self.player_team_hps) : # Jika loop tidak menemukan yg hidup, tapi tidak semua kalah (aneh)
+                if not moved_to_next and not all(hp <= 0 for hp in self.player_team_hps) :
                     print("Error logic: Tidak ada pemain hidup ditemukan untuk giliran berikutnya, tapi tidak semua kalah.")
-                    # Coba cari manual lagi, mungkin ada yang terlewat
                     found_living = False
                     for idx, hp_val in enumerate(self.player_team_hps):
                         if hp_val > 0:
                             self.current_team_attacker_index = idx
                             found_living = True
                             break
-                    if not found_living: # Benar-benar tidak ada yang hidup
-                         battle_over = True # Seharusnya sudah ditangani oleh cek all(hp <=0)
+                    if not found_living:
+                         battle_over = True
 
         if battle_over:
             self.tombol_battle.config(state="active")
@@ -380,10 +382,8 @@ Nabilla De Estika"""
             else:
                  for i in range(5):
                     self.team_member_hp_frames[i].pack_forget()
-                    # Default text jika tidak ada tim, untuk konsistensi sebelum battle
                     self.team_member_hp_labels[i].config(text=f"Pemain Tim {i+1} HP: -/-")
                     self.team_member_hp_bars[i].config(maximum=1, value=0)
-
 
         opp_name = "Lawan"
         opp_hp = 0
