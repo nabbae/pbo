@@ -1,0 +1,12 @@
+{
+  "name": "e-learning-futuristic",
+  "version": "1.0.0",
+  "description": "E-learning platform dengan tema koding futuristik",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
